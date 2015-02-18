@@ -1,0 +1,8 @@
+Package: org.thebigboss.cammodelist
+Name: CamModeList
+Depends: mobilesubstrate, preferenceloader, firmware (>= 7.0)
+Version: 1.0
+Architecture: iphoneos-arm
+Description: List available camera modes instead of scrolling.
+Author: PoomSmart
+Section: Tweaks
