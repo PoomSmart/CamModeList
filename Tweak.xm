@@ -1,43 +1,50 @@
 #import "../PS.h"
-#import "WYPopoverController.h"
+#import "PSCMLWYPopoverController.h"
+
+@interface UIFont (Camera)
++ (UIFont *)cam_cameraFontOfSize:(CGFloat)size;
+@end
 
 NSString *const tweakKey = @"tweakEnabled";
 NSString *const PREF_PATH = @"/var/mobile/Library/Preferences/com.PS.CamModeList.plist";
 CFStringRef const PreferencesNotification = CFSTR("com.PS.CamModeList.prefs");
 BOOL tweakEnabled;
 
-/*%hook CAMCameraView
+CGFloat width = 180.0f;
 
-- (BOOL)_isSwipeToModeSwitchAllowed
+static void addConstraintForDevice(NSObject <cameraViewDelegate> *cameraView, CAMBottomBar *bottomBar, UIView *backgroundView, UIView *btn, BOOL hasModeDial)
 {
-	return NO;
+	if (cameraView.spec.modeDialOrientation != 0) {
+		NSLayoutConstraint *centerX = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:backgroundView attribute:NSLayoutAttributeCenterX multiplier:1.0 constant:0.0f];
+		NSLayoutConstraint *topInset = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:backgroundView attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:-65.0f];
+		[bottomBar addConstraints:@[topInset, centerX]];
+	} else {
+		NSLayoutConstraint *rightInset = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:backgroundView attribute:NSLayoutAttributeRight multiplier:1.0 constant:-55.0f];
+		NSLayoutConstraint *topInset = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:backgroundView attribute:NSLayoutAttributeTop multiplier:1.0 constant:(hasModeDial ? -5.0f : -22.0f)];
+		[bottomBar addConstraints:@[rightInset, topInset]];
+	}
 }
 
-- (void)_setSwipeToModeSwitchEnabled:(BOOL)enabled
-{
-	%orig(NO);
-}
-
-%end*/
+CAMShutterButton *btn;
 
 UIViewController *vc;
 UITableView *tb;
-WYPopoverController *popover;
+PSCMLWYPopoverController *popover;
 
 @interface CamModeListTableDataSource : NSObject <UITableViewDataSource, UITableViewDelegate> {
-	id <cameraControllerDelegate> cameraController;
-	id <cameraViewDelegate> cameraView;
+	NSObject <cameraControllerDelegate> *cameraController;
+	NSObject <cameraViewDelegate> *cameraView;
 }
-- (id)initWithCameraController:(id <cameraControllerDelegate>)newCameraController;
-@property id <cameraControllerDelegate> cameraController;
-@property id <cameraViewDelegate> cameraView;
+- (id)initWithCameraController:(NSObject <cameraControllerDelegate> *)newCameraController;
+@property(retain, nonatomic) NSObject <cameraControllerDelegate> *cameraController;
+@property(retain, nonatomic) NSObject <cameraViewDelegate> *cameraView;
 @end
 
 @implementation CamModeListTableDataSource
 @synthesize cameraController;
 @synthesize cameraView;
 
-- (id)initWithCameraController:(id <cameraControllerDelegate>)newCameraController
+- (id)initWithCameraController:(NSObject <cameraControllerDelegate> *)newCameraController
 {
 	if (self == [super init]) {
 		self.cameraController = newCameraController;
@@ -64,16 +71,17 @@ WYPopoverController *popover;
 		cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
 		cell.accessoryType = UITableViewCellAccessoryNone;
     }
-	cell.textLabel.font = [UIFont fontWithName:@"Bold" size:20.0f];
+	cell.textLabel.font = [UIFont cam_cameraFontOfSize:15.0f];
 	cell.textLabel.textColor = [UIColor whiteColor];
-	NSString *title = [self.cameraView modeDial:self.cameraView._modeDial titleForItemAtIndex:indexPath.row];
-	cell.textLabel.text = title;
+	NSString *title = [self.cameraView modeDial:nil titleForItemAtIndex:indexPath.row];
+	NSString *correctTitle = [title stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+	cell.textLabel.text = correctTitle;
 	cell.backgroundColor = [UIColor clearColor];
 	cell.contentView.backgroundColor = [UIColor clearColor];
 	_UIBackdropView *blurView = [[_UIBackdropView alloc] initWithFrame:CGRectZero autosizesToFitSuperview:YES settings:[_UIBackdropViewSettings settingsForStyle:1]];
     cell.backgroundView = blurView;
 	cell.selectionStyle = UITableViewCellSelectionStyleNone;
-	BOOL currentMode = self.cameraController.cameraMode == [[self.cameraController supportedCameraModes][indexPath.row] intValue];
+	BOOL currentMode = (self.cameraController.cameraMode == [[self.cameraController supportedCameraModes][indexPath.row] intValue]);
 	cell.accessoryType = currentMode ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
     if ([cell respondsToSelector:@selector(setLayoutMargins:)]) {
     	cell.layoutMargins = UIEdgeInsetsZero;
@@ -82,31 +90,41 @@ WYPopoverController *popover;
 	return cell;
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   return 35.0f;
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
 	NSUInteger buttonIndex = indexPath.row;
-	if (buttonIndex != [self.cameraController supportedCameraModes].count) {
-		NSUInteger currentIndex = self.cameraView._modeDial.selectedIndex;
+	NSArray *modes = [self.cameraController supportedCameraModes];
+	if (buttonIndex != modes.count) {
+		NSUInteger currentIndex = [modes indexOfObject:@(self.cameraController.cameraMode)];
 		if (currentIndex != buttonIndex)
 			[self.cameraView _switchFromCameraModeAtIndex:currentIndex toCameraModeAtIndex:buttonIndex];
 	}
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
 	for (NSUInteger row = 0; row < [self tableView:tableView numberOfRowsInSection:0]; row++) {
-		[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:row inSection:0]].accessoryType = row == indexPath.row ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+		BOOL currentMode = (row == indexPath.row);
+		[tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:row inSection:0]].accessoryType = currentMode ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
 	}
-	[popover dismissPopoverAnimated:YES];
+	[popover dismissPopoverAnimated:YES options:PSCMLWYPopoverAnimationOptionFade];
 }
 
-- (void)popoverController:(WYPopoverController *)popoverController willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView **)view
+- (void)popoverController:(PSCMLWYPopoverController *)popoverController willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView **)view
 {
 	[popoverController dismissPopoverAnimated:NO];
+	[vc release];
+	[tb release];
+	[popover release];
 }
 
 @end
 
 CamModeListTableDataSource *ds;
 
-static void listTapped(id <cameraViewDelegate> self, UIButton *button)
+static void listTapped(NSObject <cameraViewDelegate> *self, UIButton *button)
 {
 	vc = [UIViewController new];
 	NSObject <cameraControllerDelegate> *cameraController = %c(CAMCaptureController) ? (CAMCaptureController *)[%c(CAMCaptureController) sharedInstance] : (PLCameraController *)[%c(PLCameraController) sharedInstance];
@@ -117,45 +135,38 @@ static void listTapped(id <cameraViewDelegate> self, UIButton *button)
 	tb.backgroundColor = [UIColor clearColor];
 	tb.separatorInset = UIEdgeInsetsZero;
 	tb.scrollEnabled = NO;
-	NSUInteger currentIndex = self._modeDial.selectedIndex;
-	NSIndexPath *indexPath = [NSIndexPath indexPathForRow:currentIndex inSection:0];
 	tb.allowsMultipleSelection = NO;
 	[tb reloadData];
-	[tb cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryCheckmark;
 	CGFloat height = CGRectGetMaxY([tb rectForSection:[tb numberOfSections] - 1]);
 	vc.view = tb;
-	popover = [[WYPopoverController alloc] initWithContentViewController:vc];
+	popover = [[PSCMLWYPopoverController alloc] initWithContentViewController:vc];
 	[popover beginThemeUpdates];
 	popover.theme.dimsBackgroundViewsTintColor = NO;
 	popover.theme.fillTopColor = [UIColor clearColor];
-	popover.theme.fillBottomColor = [UIColor systemYellowColor];
-	popover.theme.innerStrokeColor = [UIColor systemYellowColor];
+	popover.theme.innerStrokeColor = [UIColor systemBlueColor];
 	[popover endThemeUpdates];
 	popover.wantsDefaultContentAppearance = NO;
-	popover.popoverContentSize = CGSizeMake(200.0f, height);
-	[popover presentPopoverFromRect:button.bounds inView:button permittedArrowDirections:WYPopoverArrowDirectionAny animated:YES];
+	popover.popoverContentSize = CGSizeMake(width, height);
+	[popover presentPopoverFromRect:button.bounds inView:button permittedArrowDirections:PSCMLWYPopoverArrowDirectionAny animated:YES options:PSCMLWYPopoverAnimationOptionFade];
 }
 
 static void createListButton(NSObject <cameraViewDelegate> *self)
 {
 	CAMModeDial *modeDial = self._modeDial;
 	CAMBottomBar *bottomBar = self._bottomBar;
-	UIButton *btn = (UIButton *)[%c(CAMShutterButton) smallShutterButton];
+	btn = [%c(CAMShutterButton) smallShutterButton];
 	btn.transform = CGAffineTransformMakeScale(0.5f, 0.5f);
-	MSHookIvar<UIView *>(btn, "__innerView").backgroundColor = [UIColor systemYellowColor];
+	MSHookIvar<UIView *>(btn, "__innerView").backgroundColor = [UIColor systemBlueColor];
 	MSHookIvar<UIView *>(btn, "__outerView").layer.borderWidth = 3.0f;
 	btn.translatesAutoresizingMaskIntoConstraints = NO;
 	btn.userInteractionEnabled = YES;
 	[btn addTarget:self action:@selector(listTapped:) forControlEvents:UIControlEventTouchUpInside];
+	UIView *backgroundView = [bottomBar respondsToSelector:@selector(backgroundView)] ? [bottomBar backgroundView] : bottomBar;
 	if (modeDial == nil)
-		[bottomBar insertSubview:btn aboveSubview:[bottomBar respondsToSelector:@selector(backgroundView)] ? [bottomBar backgroundView] : bottomBar];
+		[bottomBar insertSubview:btn aboveSubview:backgroundView];
 	else
 		[bottomBar insertSubview:btn aboveSubview:modeDial];
-	NSLayoutConstraint *rightInset = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:bottomBar attribute:NSLayoutAttributeRight multiplier:1.0 constant:-55.0f];
-	NSLayoutConstraint *topInset = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:bottomBar attribute:NSLayoutAttributeTop multiplier:1.0 constant:0.5f];
-	//NSLayoutConstraint *centerY = [NSLayoutConstraint constraintWithItem:btn attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:bottomBar attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0f];
-	//[bottomBar addConstraints:@[rightInset, centerY]];
-	[bottomBar addConstraints:@[rightInset, topInset]];
+	addConstraintForDevice(self, bottomBar, backgroundView, btn, modeDial != nil);
 }
 
 %group iOS8
@@ -200,18 +211,15 @@ static void createListButton(NSObject <cameraViewDelegate> *self)
 
 %hook CAMModeDial
 
-/*- (void)touchesEnded:(id)arg1 withEvent:(id)arg2
-{
-
-}*/
-
 - (void)setSelectedIndex:(NSUInteger)index animated:(BOOL)animated
 {
 	%orig;
-	NSMutableArray *items = self._items;
-	for (NSUInteger itemIndex = 0; itemIndex < items.count; itemIndex++) {
-		CAMModeDialItem *item = items[itemIndex];
-		item.alpha = itemIndex != index ? 0.0f : 1.0f;
+	if (self.orientation == 0) {
+		NSMutableArray *items = self._items;
+		for (NSUInteger itemIndex = 0; itemIndex < items.count; itemIndex++) {
+			CAMModeDialItem *item = items[itemIndex];
+			item.alpha = itemIndex != index ? 0.0f : 1.0f;
+		}
 	}
 }
 
@@ -226,14 +234,14 @@ static void reloadSettings(CFNotificationCenterRef center, void *observer, CFStr
 
 %ctor
 {
-	@autoreleasepool {
-		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, &reloadSettings, PreferencesNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
-		reloadSettings(NULL, NULL, NULL, NULL, NULL);
-		%init;
-		if (isiOS8Up) {
-			%init(iOS8);
-		} else {
-			%init(preiOS8);
-		}
-  	}
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, &reloadSettings, PreferencesNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+	reloadSettings(NULL, NULL, NULL, NULL, NULL);
+	%init;
+	if (isiOS8Up) {
+		%init(iOS8);
+	} else {
+		%init(preiOS8);
+	}
+  	[pool drain];
 }

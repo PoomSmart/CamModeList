@@ -5,9 +5,8 @@ ARCHS = armv7 arm64
 include theos/makefiles/common.mk
 
 TWEAK_NAME = CamModeList
-CamModeList_FILES = Tweak.xm WYPopoverController.m
+CamModeList_FILES = Tweak.xm PSCMLWYPopoverController.m
 CamModeList_FRAMEWORKS = CoreGraphics UIKit
-CamModeList_OBJCFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

@@ -26,9 +26,10 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
+#import "../PS.h"
 
-@protocol WYPopoverControllerDelegate;
-@class WYPopoverTheme;
+@protocol PSCMLWYPopoverControllerDelegate;
+@class PSCMLWYPopoverTheme;
 
 #ifndef WY_POPOVER_DEFAULT_ANIMATION_DURATION
     #define WY_POPOVER_DEFAULT_ANIMATION_DURATION    .25f
@@ -38,25 +39,25 @@
     #define WY_POPOVER_MIN_SIZE                      CGSizeMake(240, 160)
 #endif
 
-typedef NS_OPTIONS(NSUInteger, WYPopoverArrowDirection) {
-    WYPopoverArrowDirectionUp = 1UL << 0,
-    WYPopoverArrowDirectionDown = 1UL << 1,
-    WYPopoverArrowDirectionLeft = 1UL << 2,
-    WYPopoverArrowDirectionRight = 1UL << 3,
-    WYPopoverArrowDirectionNone = 1UL << 4,
-    WYPopoverArrowDirectionAny = WYPopoverArrowDirectionUp | WYPopoverArrowDirectionDown | WYPopoverArrowDirectionLeft | WYPopoverArrowDirectionRight,
-    WYPopoverArrowDirectionUnknown = NSUIntegerMax
+typedef NS_OPTIONS(NSUInteger, PSCMLWYPopoverArrowDirection) {
+    PSCMLWYPopoverArrowDirectionUp = 1UL << 0,
+    PSCMLWYPopoverArrowDirectionDown = 1UL << 1,
+    PSCMLWYPopoverArrowDirectionLeft = 1UL << 2,
+    PSCMLWYPopoverArrowDirectionRight = 1UL << 3,
+    PSCMLWYPopoverArrowDirectionNone = 1UL << 4,
+    PSCMLWYPopoverArrowDirectionAny = PSCMLWYPopoverArrowDirectionUp | PSCMLWYPopoverArrowDirectionDown | PSCMLWYPopoverArrowDirectionLeft | PSCMLWYPopoverArrowDirectionRight,
+    PSCMLWYPopoverArrowDirectionUnknown = NSUIntegerMax
 };
 
-typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
-    WYPopoverAnimationOptionFade = 1UL << 0,            // default
-    WYPopoverAnimationOptionScale = 1UL << 1,
-    WYPopoverAnimationOptionFadeWithScale = WYPopoverAnimationOptionFade | WYPopoverAnimationOptionScale
+typedef NS_OPTIONS(NSUInteger, PSCMLWYPopoverAnimationOptions) {
+    PSCMLWYPopoverAnimationOptionFade = 1UL << 0,            // default
+    PSCMLWYPopoverAnimationOptionScale = 1UL << 1,
+    PSCMLWYPopoverAnimationOptionFadeWithScale = PSCMLWYPopoverAnimationOptionFade | PSCMLWYPopoverAnimationOptionScale
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-@interface WYPopoverBackgroundView : UIView
+@interface PSCMLWYPopoverBackgroundView : UIView
 
 // UI_APPEARANCE_SELECTOR doesn't support BOOLs on iOS 7,
 // so these two need to be NSUInteger instead
@@ -96,9 +97,9 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-@interface WYPopoverController : NSObject <UIAppearanceContainer>
+@interface PSCMLWYPopoverController : NSObject <UIAppearanceContainer>
 
-@property (nonatomic, weak) id <WYPopoverControllerDelegate> delegate;
+@property (nonatomic, assign) id <PSCMLWYPopoverControllerDelegate> delegate;
 
 @property (nonatomic, assign) BOOL                              dismissOnTap;
 @property (nonatomic, copy) NSArray                            *passthroughViews;
@@ -111,12 +112,12 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
 @property (nonatomic, assign) float                             animationDuration;
 @property (nonatomic, assign) BOOL                              implicitAnimationsDisabled;
 
-@property (nonatomic, strong) WYPopoverTheme                   *theme;
+@property (nonatomic, strong) PSCMLWYPopoverTheme                   *theme;
 
-@property (nonatomic, copy) void (^dismissCompletionBlock)(WYPopoverController *dimissedController);
+@property (nonatomic, copy) void (^dismissCompletionBlock)(PSCMLWYPopoverController *dimissedController);
 
-+ (void)setDefaultTheme:(WYPopoverTheme *)theme;
-+ (WYPopoverTheme *)defaultTheme;
++ (void)setDefaultTheme:(PSCMLWYPopoverTheme *)theme;
++ (PSCMLWYPopoverTheme *)defaultTheme;
 
 // initialization
 
@@ -131,48 +132,48 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
 
 - (void)presentPopoverFromRect:(CGRect)rect
                         inView:(UIView *)view
-      permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+      permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                       animated:(BOOL)animated;
 
 - (void)presentPopoverFromRect:(CGRect)rect
                         inView:(UIView *)view
-      permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+      permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                       animated:(BOOL)animated
                     completion:(void (^)(void))completion;
 
 - (void)presentPopoverFromRect:(CGRect)rect
                         inView:(UIView *)view
-      permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+      permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                       animated:(BOOL)animated
-                       options:(WYPopoverAnimationOptions)options;
+                       options:(PSCMLWYPopoverAnimationOptions)options;
 
 - (void)presentPopoverFromRect:(CGRect)rect
                         inView:(UIView *)view
-      permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+      permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                       animated:(BOOL)animated
-                       options:(WYPopoverAnimationOptions)options
+                       options:(PSCMLWYPopoverAnimationOptions)options
                     completion:(void (^)(void))completion;
 
 // Present popover from bar button items methods
 
 - (void)presentPopoverFromBarButtonItem:(UIBarButtonItem *)item
-               permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+               permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                                animated:(BOOL)animated;
 
 - (void)presentPopoverFromBarButtonItem:(UIBarButtonItem *)item
-               permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+               permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                                animated:(BOOL)animated
                              completion:(void (^)(void))completion;
 
 - (void)presentPopoverFromBarButtonItem:(UIBarButtonItem *)item
-               permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+               permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                                animated:(BOOL)animated
-                                options:(WYPopoverAnimationOptions)options;
+                                options:(PSCMLWYPopoverAnimationOptions)options;
 
 - (void)presentPopoverFromBarButtonItem:(UIBarButtonItem *)item
-               permittedArrowDirections:(WYPopoverArrowDirection)arrowDirections
+               permittedArrowDirections:(PSCMLWYPopoverArrowDirection)arrowDirections
                                animated:(BOOL)animated
-                                options:(WYPopoverAnimationOptions)options
+                                options:(PSCMLWYPopoverAnimationOptions)options
                              completion:(void (^)(void))completion;
 
 // Present popover as dialog methods
@@ -183,10 +184,10 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
                             completion:(void (^)(void))completion;
 
 - (void)presentPopoverAsDialogAnimated:(BOOL)animated
-                               options:(WYPopoverAnimationOptions)options;
+                               options:(PSCMLWYPopoverAnimationOptions)options;
 
 - (void)presentPopoverAsDialogAnimated:(BOOL)animated
-                               options:(WYPopoverAnimationOptions)options
+                               options:(PSCMLWYPopoverAnimationOptions)options
                             completion:(void (^)(void))completion;
 
 // Dismiss popover methods
@@ -197,10 +198,10 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
                     completion:(void (^)(void))completion;
 
 - (void)dismissPopoverAnimated:(BOOL)animated
-                       options:(WYPopoverAnimationOptions)aOptions;
+                       options:(PSCMLWYPopoverAnimationOptions)aOptions;
 
 - (void)dismissPopoverAnimated:(BOOL)animated
-                       options:(WYPopoverAnimationOptions)aOptions
+                       options:(PSCMLWYPopoverAnimationOptions)aOptions
                     completion:(void (^)(void))completion;
 
 // Misc
@@ -212,26 +213,26 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-@protocol WYPopoverControllerDelegate <NSObject>
+@protocol PSCMLWYPopoverControllerDelegate <NSObject>
 @optional
 
-- (BOOL)popoverControllerShouldDismissPopover:(WYPopoverController *)popoverController;
+- (BOOL)popoverControllerShouldDismissPopover:(PSCMLWYPopoverController *)popoverController;
 
-- (void)popoverControllerDidPresentPopover:(WYPopoverController *)popoverController;
+- (void)popoverControllerDidPresentPopover:(PSCMLWYPopoverController *)popoverController;
 
-- (void)popoverControllerDidDismissPopover:(WYPopoverController *)popoverController;
+- (void)popoverControllerDidDismissPopover:(PSCMLWYPopoverController *)popoverController;
 
-- (void)popoverController:(WYPopoverController *)popoverController willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView **)view;
+- (void)popoverController:(PSCMLWYPopoverController *)popoverController willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView **)view;
 
-- (BOOL)popoverControllerShouldIgnoreKeyboardBounds:(WYPopoverController *)popoverController;
+- (BOOL)popoverControllerShouldIgnoreKeyboardBounds:(PSCMLWYPopoverController *)popoverController;
 
-- (void)popoverController:(WYPopoverController *)popoverController willTranslatePopoverWithYOffset:(float *)value;
+- (void)popoverController:(PSCMLWYPopoverController *)popoverController willTranslatePopoverWithYOffset:(float *)value;
 
 @end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-@interface WYPopoverTheme : NSObject
+@interface PSCMLWYPopoverTheme : NSObject
 
 // These two can be BOOLs, because implicit casting
 // between BOOLs and NSUIntegers works fine
@@ -268,7 +269,15 @@ typedef NS_OPTIONS(NSUInteger, WYPopoverAnimationOptions) {
 @property (nonatomic, strong) UIColor *overlayColor;
 
 + (instancetype)theme;
-+ (instancetype)themeForIOS6;
-+ (instancetype)themeForIOS7;
 
+@end
+
+@interface PhotoTorchTableDataSource : NSObject <UITableViewDataSource, UITableViewDelegate> {
+	NSObject <cameraControllerDelegate> *cameraController;
+	NSObject <cameraViewDelegate> *cameraView;
+}
+- (id)initWithCameraController:(NSObject <cameraControllerDelegate> *)newCameraController;
+@property(retain, nonatomic) NSObject <cameraControllerDelegate> *cameraController;
+@property(retain, nonatomic) NSObject <cameraViewDelegate> *cameraView;
+@property(retain, nonatomic) UISlider *slider;
 @end
