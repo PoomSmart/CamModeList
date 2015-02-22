@@ -224,8 +224,6 @@ typedef NS_OPTIONS(NSUInteger, PSCMLWYPopoverAnimationOptions) {
 
 - (void)popoverController:(PSCMLWYPopoverController *)popoverController willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView **)view;
 
-- (BOOL)popoverControllerShouldIgnoreKeyboardBounds:(PSCMLWYPopoverController *)popoverController;
-
 - (void)popoverController:(PSCMLWYPopoverController *)popoverController willTranslatePopoverWithYOffset:(float *)value;
 
 @end

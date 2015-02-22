@@ -112,14 +112,6 @@ PSCMLWYPopoverController *popover;
 	[popover dismissPopoverAnimated:YES options:PSCMLWYPopoverAnimationOptionFade];
 }
 
-- (void)popoverController:(PSCMLWYPopoverController *)popoverController willRepositionPopoverToRect:(inout CGRect *)rect inView:(inout UIView **)view
-{
-	[popoverController dismissPopoverAnimated:NO];
-	[vc release];
-	[tb release];
-	[popover release];
-}
-
 @end
 
 CamModeListTableDataSource *ds;
@@ -169,6 +161,23 @@ static void createListButton(NSObject <cameraViewDelegate> *self)
 	addConstraintForDevice(self, bottomBar, backgroundView, btn, modeDial != nil);
 }
 
+static void cleanup()
+{
+	if (popover) {
+		[popover dismissPopoverAnimated:YES];
+		[popover release];
+		popover = nil;
+	}
+	if (vc) {
+		[vc release];
+		vc = nil;
+	}
+	if (tb) {
+		[tb release];
+		tb = nil;
+	}
+}
+
 %group iOS8
 
 %hook CAMCameraView
@@ -183,6 +192,12 @@ static void createListButton(NSObject <cameraViewDelegate> *self)
 {
 	%orig;
 	createListButton(self);
+}
+
+- (void)_rotateCameraControlsAndInterface
+{
+	%orig;
+	cleanup();
 }
 
 %end
@@ -205,6 +220,12 @@ static void createListButton(NSObject <cameraViewDelegate> *self)
 	createListButton(self);
 }
 
+- (void)_rotateCameraControlsAndInterface
+{
+	%orig;
+	cleanup();
+}
+
 %end
 
 %end
@@ -218,7 +239,10 @@ static void createListButton(NSObject <cameraViewDelegate> *self)
 		NSMutableArray *items = self._items;
 		for (NSUInteger itemIndex = 0; itemIndex < items.count; itemIndex++) {
 			CAMModeDialItem *item = items[itemIndex];
-			item.alpha = itemIndex != index ? 0.0f : 1.0f;
+			if (isiOS8Up)
+				[item cam_setHidden:itemIndex != index animated:animated];
+			else
+				[item pl_setHidden:itemIndex != index animated:animated];
 		}
 	}
 }

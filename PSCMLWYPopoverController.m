@@ -31,12 +31,6 @@
 #define WY_BASE_SDK_7_ENABLED
 #endif
 
-#ifdef DEBUG
-#define WY_LOG(fmt, ...)		NSLog((@"%s (%d) : " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
-#else
-#define WY_LOG(...)
-#endif
-
 #define WY_IS_IOS_EQUAL_TO(v)                  ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedSame)
 
 #define WY_IS_IOS_GREATER_THAN(v)              ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedDescending)
@@ -44,59 +38,6 @@
 #define WY_IS_IOS_GREATER_THAN_OR_EQUAL_TO(v)  ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedAscending)
 
 #define WY_IS_IOS_LESS_THAN(v)                 ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedAscending)
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-@interface PSCMLWYKeyboardListener : NSObject 
-
-+ (BOOL)isVisible;
-+ (CGRect)rect;
-
-@end
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-@implementation PSCMLWYKeyboardListener
-
-static BOOL isVisible;
-static CGRect keyboardRect;
-
-+ (void)load
-{
-    @autoreleasepool {
-        keyboardRect = CGRectZero;
-        isVisible = NO;
-        
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillHide) name:UIKeyboardWillHideNotification object:nil];
-    }
-}
-
-+ (void)keyboardWillShow:(NSNotification *)notification
-{
-    NSDictionary *info = [notification userInfo];
-    keyboardRect = [[info objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
-    
-    isVisible = YES;
-}
-
-+ (void)keyboardWillHide
-{
-    keyboardRect = CGRectZero;
-    isVisible = NO;
-}
-
-+ (BOOL)isVisible
-{
-    return isVisible;
-}
-
-+ (CGRect)rect
-{
-    return keyboardRect;
-}
-
-@end
 
 static BOOL getValueOfColor(UIColor *color, CGFloat *red, CGFloat *green, CGFloat *blue, CGFloat *alpha)
 {
@@ -196,21 +137,6 @@ static UIColor *colorByDarken(UIColor *color, float d)
     
     return [NSString stringWithFormat:@"%@ [ %f x %f ]", direction, areaSize.width, areaSize.height];
 }
-
-/*- (float)value
-{
-    float result = 0;
-    
-    if (areaSize.width > 0 && areaSize.height > 0)
-    {
-        float w1 = ceilf(areaSize.width / 10.0);
-        float h1 = ceilf(areaSize.height / 10.0);
-        
-        result = (w1 * h1);
-    }
-    
-    return result;
-}*/
 
 @end
 
@@ -729,18 +655,6 @@ static UIColor *colorByDarken(UIColor *color, float d)
 {
     [self.delegate popoverBackgroundViewDidTouchOutside:self];
 }
-
-/*- (UIEdgeInsets)outerShadowInsets
-{
-    UIEdgeInsets result = UIEdgeInsetsMake(outerShadowBlurRadius, outerShadowBlurRadius, outerShadowBlurRadius, outerShadowBlurRadius);
-    
-    result.top -= self.outerShadowOffset.height;
-    result.bottom += self.outerShadowOffset.height;
-    result.left -= self.outerShadowOffset.width;
-    result.right += self.outerShadowOffset.width;
-    
-    return result;
-}*/
 
 - (void)setArrowOffset:(float)value
 {
@@ -1377,7 +1291,6 @@ static UIColor *colorByDarken(UIColor *color, float d)
     BOOL                     animated;
     BOOL                     isListeningNotifications;
     BOOL                     isObserverAdded;
-    BOOL                     isInterfaceOrientationChanging;
     BOOL                     ignoreOrientation;
     __weak UIBarButtonItem  *barButtonItem;
     
@@ -1837,6 +1750,7 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     };
     
     void (^adjustTintDimmed)() = ^() {
+#ifdef WY_BASE_SDK_7_ENABLED
         if (backgroundView.dimsBackgroundViewsTintColor && [inView.window respondsToSelector:@selector(setTintAdjustmentMode:)]) {
             for (UIView *subview in inView.window.subviews) {
                 if (subview != backgroundView) {
@@ -1844,6 +1758,7 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
                 }
             }
         }
+#endif
     };
     
     backgroundView.hidden = NO;
@@ -1884,29 +1799,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
         completionBlock(NO);
     }
     
-    if (isListeningNotifications == NO)
-    {
-        isListeningNotifications = YES;
-        
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(didChangeStatusBarOrientation:)
-                                                     name:UIApplicationDidChangeStatusBarOrientationNotification
-                                                   object:nil];
-        
-        [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(didChangeDeviceOrientation:)
-                                                     name:UIDeviceOrientationDidChangeNotification
-                                                   object:nil];
-        
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(keyboardWillShow:)
-                                                     name:UIKeyboardWillShowNotification object:nil];
-        
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(keyboardWillHide:)
-                                                     name:UIKeyboardWillHideNotification object:nil];
-    }
 }
 
 - (void)presentPopoverFromBarButtonItem:(UIBarButtonItem *)aItem
@@ -2009,10 +1901,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
             containerViewSize.height = backgroundView.frame.size.width;
         }
         
-        //WY_LOG(@"containerView.arrowOffset = %f", containerView.arrowOffset);
-        //WY_LOG(@"containerViewSize = %@", NSStringFromCGSize(containerViewSize));
-        //WY_LOG(@"orientation = %@", WYStringFromOrientation(orientation));
-        
         if (arrowDirection == PSCMLWYPopoverArrowDirectionDown)
         {
             transform = CGAffineTransformTranslate(transform, backgroundView.arrowOffset, containerViewSize.height / 2);
@@ -2076,31 +1964,18 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     
     float overlayWidth;
     float overlayHeight;
-    
-    float keyboardHeight;
 
     if (ignoreOrientation)
     {
         overlayWidth = overlayView.window.frame.size.width;
         overlayHeight = overlayView.window.frame.size.height;
 
-        CGRect convertedFrame = [overlayView.window convertRect:PSCMLWYKeyboardListener.rect toView:overlayView];
-        keyboardHeight = convertedFrame.size.height;
     }
     else
     {
         overlayWidth = UIInterfaceOrientationIsPortrait(orientation) ? overlayView.bounds.size.width : overlayView.bounds.size.height;
         overlayHeight = UIInterfaceOrientationIsPortrait(orientation) ? overlayView.bounds.size.height : overlayView.bounds.size.width;
 
-        keyboardHeight = UIInterfaceOrientationIsPortrait(orientation) ? PSCMLWYKeyboardListener.rect.size.height : PSCMLWYKeyboardListener.rect.size.width;
-    }
-    
-    if (delegate && [delegate respondsToSelector:@selector(popoverControllerShouldIgnoreKeyboardBounds:)]) {
-        BOOL shouldIgnore = [delegate popoverControllerShouldIgnoreKeyboardBounds:self];
-        
-        if (shouldIgnore) {
-            keyboardHeight = 0;
-        }
     }
     
     PSCMLWYPopoverArrowDirection arrowDirection = permittedArrowDirections;
@@ -2115,7 +1990,7 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     minX = popoverLayoutMargins.left;
     maxX = overlayWidth - popoverLayoutMargins.right;
     minY = WYStatusBarHeight() + popoverLayoutMargins.top;
-    maxY = overlayHeight - popoverLayoutMargins.bottom - keyboardHeight;
+    maxY = overlayHeight - popoverLayoutMargins.bottom;
     
     // Which direction ?
     //
@@ -2358,29 +2233,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     
     [backgroundView setViewController:viewController];
     
-    // keyboard support
-    //
-    if (keyboardHeight > 0) {
-        
-        float keyboardY = UIInterfaceOrientationIsPortrait(orientation) ? PSCMLWYKeyboardListener.rect.origin.y : PSCMLWYKeyboardListener.rect.origin.x;
-        
-        float yOffset = containerFrame.origin.y + containerFrame.size.height - keyboardY;
-        
-        if (yOffset > 0) {
-            
-            if (containerFrame.origin.y - yOffset < minY) {
-                yOffset -= minY - (containerFrame.origin.y - yOffset);
-            }
-            
-            if ([delegate respondsToSelector:@selector(popoverController:willTranslatePopoverWithYOffset:)])
-            {
-                [delegate popoverController:self willTranslatePopoverWithYOffset:&yOffset];
-            }
-            
-            containerFrame.origin.y -= yOffset;
-        }
-    }
-    
     CGPoint containerOrigin = containerFrame.origin;
     
     backgroundView.transform = CGAffineTransformMakeRotation(WYInterfaceOrientationAngleOfOrientation(orientation));
@@ -2402,7 +2254,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     
     [backgroundView setNeedsDisplay];
     
-    WY_LOG(@"popoverContainerView.frame = %@", NSStringFromCGRect(backgroundView.frame));
 }
 
 - (void)dismissPopoverAnimated:(BOOL)aAnimated
@@ -2450,7 +2301,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     
     
     void (^adjustTintAutomatic)() = ^() {
-#ifdef WY_BASE_SDK_7_ENABLED
         if ([inView.window respondsToSelector:@selector(setTintAdjustmentMode:)]) {
             for (UIView *subview in inView.window.subviews) {
                 if (subview != backgroundView) {
@@ -2458,7 +2308,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
                 }
             }
         }
-#endif
     };
     
     void (^completionBlock)() = ^() {
@@ -2488,28 +2337,6 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
             self.dismissCompletionBlock(strongSelf);
         }
     };
-    
-    if (isListeningNotifications == YES)
-    {
-        isListeningNotifications = NO;
-        
-        [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                        name:UIApplicationDidChangeStatusBarOrientationNotification
-                                                      object:nil];
-        
-        [[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
-        [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                        name:UIDeviceOrientationDidChangeNotification
-                                                      object:nil];
-        
-        [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                        name:UIKeyboardWillShowNotification
-                                                      object:nil];
-        
-        [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                        name:UIKeyboardWillHideNotification
-                                                      object:nil];
-    }
     
     @try {
         if (isObserverAdded == YES)
@@ -2737,17 +2564,7 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     CGRect viewFrame = [aView convertRect:aRect toView:nil];
     viewFrame = WYRectInWindowBounds(viewFrame, orientation);
     
-    float minX, maxX, minY, maxY = 0;
-    
-    float keyboardHeight = UIInterfaceOrientationIsPortrait(orientation) ? PSCMLWYKeyboardListener.rect.size.height : PSCMLWYKeyboardListener.rect.size.width;
-    
-    if (delegate && [delegate respondsToSelector:@selector(popoverControllerShouldIgnoreKeyboardBounds:)]) {
-        BOOL shouldIgnore = [delegate popoverControllerShouldIgnoreKeyboardBounds:self];
-        
-        if (shouldIgnore) {
-            keyboardHeight = 0;
-        }
-    }
+    float minX, maxX, minY, maxY = 0;    
     
     float overlayWidth = UIInterfaceOrientationIsPortrait(orientation) ? overlayView.bounds.size.width : overlayView.bounds.size.height;
     
@@ -2756,7 +2573,7 @@ static PSCMLWYPopoverTheme *defaultTheme_ = nil;
     minX = popoverLayoutMargins.left;
     maxX = overlayWidth - popoverLayoutMargins.right;
     minY = WYStatusBarHeight() + popoverLayoutMargins.top;
-    maxY = overlayHeight - popoverLayoutMargins.bottom - keyboardHeight;
+    maxY = overlayHeight - popoverLayoutMargins.bottom;
     
     CGSize result = CGSizeZero;
     
@@ -2940,83 +2757,6 @@ static CGPoint WYPointRelativeToOrientation(CGPoint origin, CGSize size, UIInter
     }
     
     return result;
-}
-
-#pragma mark Selectors
-
-- (void)didChangeStatusBarOrientation:(NSNotification *)notification
-{
-    isInterfaceOrientationChanging = YES;
-}
-
-- (void)didChangeDeviceOrientation:(NSNotification *)notification
-{
-    if (isInterfaceOrientationChanging == NO) return;
-    
-    isInterfaceOrientationChanging = NO;
-    
-    if ([viewController isKindOfClass:[UINavigationController class]])
-    {
-        UINavigationController* navigationController = (UINavigationController*)viewController;
-        
-        if (navigationController.navigationBarHidden == NO)
-        {
-            navigationController.navigationBarHidden = YES;
-            navigationController.navigationBarHidden = NO;
-        }
-    }
-    
-    if (barButtonItem)
-    {
-        inView = [barButtonItem valueForKey:@"view"];
-        rect = inView.bounds;
-    }
-    else if ([delegate respondsToSelector:@selector(popoverController:willRepositionPopoverToRect:inView:)])
-    {
-        CGRect anotherRect;
-        UIView *anotherInView;
-        
-        [delegate popoverController:self willRepositionPopoverToRect:&anotherRect inView:&anotherInView];
-        
-        if (&anotherRect != NULL)
-        {
-            rect = anotherRect;
-        }
-        
-        if (&anotherInView != NULL)
-        {
-            inView = anotherInView;
-        }
-    }
-    
-    [self positionPopover:NO];
-}
-
-- (void)keyboardWillShow:(NSNotification *)notification
-{
-    
-    BOOL shouldIgnore = NO;
-    
-    if (delegate && [delegate respondsToSelector:@selector(popoverControllerShouldIgnoreKeyboardBounds:)]) {
-        shouldIgnore = [delegate popoverControllerShouldIgnoreKeyboardBounds:self];
-    }
-    
-    if (shouldIgnore == NO) {
-        [self positionPopover:YES];
-    }
-}
-
-- (void)keyboardWillHide:(NSNotification *)notification
-{
-    BOOL shouldIgnore = NO;
-    
-    if (delegate && [delegate respondsToSelector:@selector(popoverControllerShouldIgnoreKeyboardBounds:)]) {
-        shouldIgnore = [delegate popoverControllerShouldIgnoreKeyboardBounds:self];
-    }
-    
-    if (shouldIgnore == NO) {
-        [self positionPopover:YES];
-    }
 }
 
 #pragma mark Memory management
