@@ -1,4 +1,3 @@
-PACKAGE_VERSION = 0.0.1
 GO_EASY_ON_ME = 1
 DEBUG = 0
 ARCHS = armv7 arm64
