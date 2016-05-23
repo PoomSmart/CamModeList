@@ -250,7 +250,7 @@ static void showOrHideListButtonIfNecessary(UIView <cameraViewDelegate> *self, B
 	listTapped((UIView <cameraViewDelegate> *)self, button);
 }
 
-- (void)loadView
+- (void)_createCommonControlsIfNecessary
 {
 	%orig;
 	createListButton((UIView <cameraViewDelegate> *)self);
