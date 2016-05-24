@@ -442,16 +442,18 @@ static void reloadSettings(CFNotificationCenterRef center, void *observer, CFStr
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, &reloadSettings, PreferencesNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
 	reloadSettings(NULL, NULL, NULL, NULL, NULL);
-	%init;
 	if (isiOS9Up) {
+		openCamera9();
 		%init(iOS9);
 	} else {
-		%init(preiOS9);
 		if (isiOS8) {
+			openCamera8();
 			%init(iOS8);
 		} else {
+			openCamera7();
 			%init(preiOS8);
 		}
+		%init(preiOS9);
 	}
   	[pool drain];
 }
